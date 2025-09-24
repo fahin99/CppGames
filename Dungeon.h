@@ -69,6 +69,9 @@ private:
     void generateCorridors();
     void createHorizontalTunnel(int x1, int x2, int y);
     void createVerticalTunnel(int y1, int y2, int x);
+    void createLShapedRoom(const Room& room);
+    void createCrossShapedRoom(const Room& room);
+    void addRoomFeatures(const Room& room);
     void placeTreasures();
     void setTile(int x, int y, TileType type);
     
@@ -83,6 +86,9 @@ public:
     sf::Vector2f getPlayerSpawn() const;
     std::vector<sf::Vector2f> getEnemySpawns(int count) const;
     void setTileTypeAt(float x, float y, TileType type);
+    int getRoomCount() const { return rooms.size(); }
+    int getWidth() const { return width; }
+    int getHeight() const { return height; }
     
     static const int TILE_SIZE = 32;
 };

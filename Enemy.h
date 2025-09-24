@@ -53,6 +53,7 @@ public:
     bool isDead() const { return aiState == AIState::DEAD; }
     EnemyType getType() const { return type; }
     int getExperienceReward() const;
+    Stats getStats() const { return stats; }
     
     // Collision check
     bool isColliding(const sf::FloatRect& other) const;

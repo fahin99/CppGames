@@ -25,6 +25,9 @@ Player::Player(float x, float y)
 }
 
 void Player::update(float deltaTime) {
+    // Update power-ups
+    updatePowerUps(deltaTime);
+    
     // Handle input
     handleInput();
     
@@ -36,7 +39,7 @@ void Player::update(float deltaTime) {
         }
     }
     
-    // Apply movement
+    // Apply movement with effective speed
     position += velocity * deltaTime;
     sprite.setPosition(position);
     
@@ -64,30 +67,41 @@ void Player::update(float deltaTime) {
 }
 
 void Player::render(sf::RenderWindow& window) {
-    // Draw attack indicator
+    // Draw attack indicator - much more visible
     if (isAttacking) {
-        sf::CircleShape attackCircle(30);
-        attackCircle.setFillColor(sf::Color(255, 255, 0, 100));
-        attackCircle.setPosition(position.x - 30, position.y - 30);
+        // Large pulsing circle
+        sf::CircleShape attackCircle(60);
+        attackCircle.setFillColor(sf::Color(255, 255, 0, 150));
+        attackCircle.setPosition(position.x - 60, position.y - 60);
+        attackCircle.setOutlineThickness(3);
+        attackCircle.setOutlineColor(sf::Color::Red);
         window.draw(attackCircle);
+        
+        // Smaller inner circle
+        sf::CircleShape innerCircle(30);
+        innerCircle.setFillColor(sf::Color(255, 0, 0, 200));
+        innerCircle.setPosition(position.x - 30, position.y - 30);
+        window.draw(innerCircle);
     }
     
     window.draw(sprite);
 }
 
 void Player::handleInput() {
+    float effectiveSpeed = getEffectiveSpeed();
+    
     // Movement input
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-        velocity.x = -speed;
+        velocity.x = -effectiveSpeed;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-        velocity.x = speed;
+        velocity.x = effectiveSpeed;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-        velocity.y = -speed;
+        velocity.y = -effectiveSpeed;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-        velocity.y = speed;
+        velocity.y = effectiveSpeed;
     }
     
     // Normalize diagonal movement
@@ -119,13 +133,14 @@ void Player::attack() {
 }
 
 void Player::takeDamage(int damage) {
-    int actualDamage = std::max(1, damage - stats.defense);
+    int effectiveArmor = getEffectiveArmor();
+    int actualDamage = std::max(1, damage - effectiveArmor);
     stats.health = std::max(0, stats.health - actualDamage);
     
     // Visual feedback
     sprite.setFillColor(sf::Color::Red);
     
-    std::cout << "Player took " << actualDamage << " damage! Health: " << stats.health << "/" << stats.maxHealth << std::endl;
+    std::cout << "Player took " << actualDamage << " damage (reduced by " << effectiveArmor << " armor)! Health: " << stats.health << "/" << stats.maxHealth << std::endl;
 }
 
 void Player::gainExperience(int exp) {
@@ -163,4 +178,64 @@ void Player::setPosition(float x, float y) {
 void Player::setPosition(sf::Vector2f pos) {
     position = pos;
     sprite.setPosition(position);
+}
+
+void Player::applyPowerUp(int powerUpType, int value, float duration) {
+    switch (powerUpType) {
+        case 0: // HEALTH_POTION
+            heal(value);
+            break;
+        case 1: // DAMAGE_BOOST
+            activePowerUps.damageBoost = value;
+            activePowerUps.damageBoostTimer = duration;
+            break;
+        case 2: // SPEED_BOOST
+            activePowerUps.speedBoost = value;
+            activePowerUps.speedBoostTimer = duration;
+            break;
+        case 3: // ARMOR_BOOST
+            activePowerUps.armorBoost = value;
+            activePowerUps.armorBoostTimer = duration;
+            break;
+    }
+}
+
+void Player::updatePowerUps(float deltaTime) {
+    if (activePowerUps.damageBoostTimer > 0) {
+        activePowerUps.damageBoostTimer -= deltaTime;
+        if (activePowerUps.damageBoostTimer <= 0) {
+            activePowerUps.damageBoost = 0;
+        }
+    }
+    
+    if (activePowerUps.speedBoostTimer > 0) {
+        activePowerUps.speedBoostTimer -= deltaTime;
+        if (activePowerUps.speedBoostTimer <= 0) {
+            activePowerUps.speedBoost = 0;
+        }
+    }
+    
+    if (activePowerUps.armorBoostTimer > 0) {
+        activePowerUps.armorBoostTimer -= deltaTime;
+        if (activePowerUps.armorBoostTimer <= 0) {
+            activePowerUps.armorBoost = 0;
+        }
+    }
+}
+
+void Player::heal(int amount) {
+    stats.health = std::min(stats.maxHealth, stats.health + amount);
+    std::cout << "Player healed for " << amount << " HP! Health: " << stats.health << "/" << stats.maxHealth << std::endl;
+}
+
+int Player::getEffectiveAttack() const {
+    return stats.attack + activePowerUps.damageBoost;
+}
+
+int Player::getEffectiveSpeed() const {
+    return PLAYER_SPEED + (PLAYER_SPEED * activePowerUps.speedBoost / 100);
+}
+
+int Player::getEffectiveArmor() const {
+    return stats.defense + activePowerUps.armorBoost;
 }

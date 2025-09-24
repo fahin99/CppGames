@@ -10,7 +10,7 @@ struct Stats {
     int experience;
     int level;
     
-    Stats() : health(100), maxHealth(100), attack(10), defense(5), experience(0), level(1) {}
+    Stats() : health(100), maxHealth(100), attack(15), defense(5), experience(0), level(1) {}
 };
 
 class Player {
@@ -29,6 +29,16 @@ private:
     float animationTimer;
     int currentFrame;
     
+    // Power-up effects
+    struct ActivePowerUp {
+        int damageBoost = 0;
+        int speedBoost = 0;
+        int armorBoost = 0;
+        float damageBoostTimer = 0.0f;
+        float speedBoostTimer = 0.0f;
+        float armorBoostTimer = 0.0f;
+    } activePowerUps;
+    
 public:
     Player(float x, float y);
     
@@ -40,6 +50,14 @@ public:
     void takeDamage(int damage);
     void gainExperience(int exp);
     void levelUp();
+    
+    // Power-up methods
+    void applyPowerUp(int powerUpType, int value, float duration);
+    void updatePowerUps(float deltaTime);
+    void heal(int amount);
+    int getEffectiveAttack() const;
+    int getEffectiveSpeed() const;
+    int getEffectiveArmor() const;
     
     // Getters
     sf::Vector2f getPosition() const { return position; }
